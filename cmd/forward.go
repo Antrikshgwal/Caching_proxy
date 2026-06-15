@@ -15,7 +15,7 @@ var forwardCmd = &cobra.Command{
     Short:   "Forward request",
     Long:    "Forward request from one URL to another",
     Run: func(cmd *cobra.Command, args []string) {
-        fmt.Printf("forwarding request from port %d to %s", port, origin)
+        fmt.Printf("forwarding request from port %d to %s \n", port, origin)
         Server(fmt.Sprint(port), origin)
     },
 }
