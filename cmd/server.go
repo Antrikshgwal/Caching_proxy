@@ -57,7 +57,19 @@ func Server(port string, origin string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			// proxy to origin server for non-GET requests without caching
-			resp, err := client.Do(r)
+
+			upstreamReq, err := http.NewRequest(
+				r.Method,
+				origin+r.URL.RequestURI(),
+				r.Body,
+			)
+			upstreamReq.ContentLength = r.ContentLength
+			if err != nil {
+				http.Error(w, "failed to create upstream request", http.StatusInternalServerError)
+				return
+			}
+			upstreamReq.Header = r.Header.Clone()
+			resp, err := client.Do(upstreamReq)
 			if err != nil {
 				http.Error(w, "upstream request failed", http.StatusBadGateway)
 				return
@@ -90,7 +102,7 @@ func Server(port string, origin string) {
 			w.Write(cached.Body)
 			log.Default().Printf("Cache HIT for %s %s. Cache memory location: %p\n", r.Method, r.URL.Path, &Cache)
 		} else {
-			resp, err := http.Get(origin + r.URL.Path)
+			resp, err := http.Get(origin + r.URL.RequestURI())
 			if err != nil {
 				http.Error(w, "upstream request failed", http.StatusBadGateway)
 				return
@@ -140,4 +152,3 @@ func getCachedResponse(cacheKey string) (CachedResponse, bool) {
 	}
 	return CachedResponse{}, false
 }
-
